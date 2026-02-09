@@ -1,0 +1,1 @@
+"""Shape recognizers for arrowviz."""
