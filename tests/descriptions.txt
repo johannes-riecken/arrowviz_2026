@@ -1,0 +1,8 @@
+recognizes regular rounded rectangle
+recognizes wide rounded rectangle
+recognizes regular unrounded rectangle
+recognizes wide unrounded rectangle
+recognizes circle
+recognizes circle within rounded rectangle
+recognizes rounded rectangle within circle
+recognizes dashed rectangle
