@@ -2,19 +2,42 @@
 
 from typing import BinaryIO
 
+import cv2
+import numpy as np
+
 from arrowviz_2026.ast import Schematic, Shape, ShapeType
 
 
 def recognize_schematic(image_file: BinaryIO) -> Schematic:
     """Recognize a schematic from an image file handle."""
 
-    # Branching on file name is not allowed in this recognizer.
-    _ = image_file
+    data = np.frombuffer(image_file.read(), dtype=np.uint8)
+    image = cv2.imdecode(data, cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        raise ValueError("Unable to decode image")
+
+    _, threshold = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY_INV)
+    contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    if not contours:
+        return Schematic()
+
+    contour = max(contours, key=cv2.contourArea)[:, 0, :]
+    x, y, w, h = cv2.boundingRect(contour)
+    corners = np.array(
+        [[x, y], [x + w - 1, y], [x, y + h - 1], [x + w - 1, y + h - 1]],
+        dtype=np.float32,
+    )
+
+    distances = [float(np.min(np.linalg.norm(contour - corner, axis=1))) for corner in corners]
+    min_corner_distance = min(distances)
+
+    shape_type = ShapeType.ROUNDED if min_corner_distance > 2.0 else ShapeType.BOX
+
     return Schematic(
         shapes=(
             Shape(
                 id="shape-0",
-                shape_type=ShapeType.ROUNDED,
+                shape_type=shape_type,
             ),
         )
     )
