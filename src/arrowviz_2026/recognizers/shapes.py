@@ -31,7 +31,14 @@ def recognize_schematic(image_file: BinaryIO) -> Schematic:
     distances = [float(np.min(np.linalg.norm(contour - corner, axis=1))) for corner in corners]
     min_corner_distance = min(distances)
 
-    shape_type = ShapeType.ROUNDED if min_corner_distance > 2.0 else ShapeType.BOX
+    area = float(cv2.contourArea(contour.reshape(-1, 1, 2)))
+    perimeter = float(cv2.arcLength(contour.reshape(-1, 1, 2), True))
+    circularity = 4.0 * np.pi * area / (perimeter * perimeter) if perimeter else 0.0
+
+    if circularity > 0.88:
+        shape_type = ShapeType.CIRCLE
+    else:
+        shape_type = ShapeType.ROUNDED if min_corner_distance > 2.0 else ShapeType.BOX
 
     return Schematic(
         shapes=(

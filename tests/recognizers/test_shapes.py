@@ -50,3 +50,19 @@ def test_recognizes_regular_unrounded_rectangle() -> None:
             ),
         )
     )
+
+
+def test_recognizes_circle() -> None:
+    fixture = Path("tests/data/04.png")
+
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.CIRCLE,
+            ),
+        )
+    )
