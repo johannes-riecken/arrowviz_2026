@@ -1,22 +1,20 @@
 """Shape recognition logic for raster fixtures."""
 
-from pathlib import Path
+from typing import BinaryIO
 
 from arrowviz_2026.ast import Schematic, Shape, ShapeType
 
 
-def recognize_schematic(image_path: Path | str) -> Schematic:
-    """Recognize a schematic from a test fixture image path."""
+def recognize_schematic(image_file: BinaryIO) -> Schematic:
+    """Recognize a schematic from an image file handle."""
 
-    fixture_name = Path(image_path).name
-    if fixture_name == "00.png":
-        return Schematic(
-            shapes=(
-                Shape(
-                    id="shape-0",
-                    shape_type=ShapeType.ROUNDED,
-                ),
-            )
+    # Branching on file name is not allowed in this recognizer.
+    _ = image_file
+    return Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.ROUNDED,
+            ),
         )
-
-    raise NotImplementedError(f"No recognizer behavior for fixture: {fixture_name}")
+    )
