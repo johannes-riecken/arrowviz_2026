@@ -1,9 +1,19 @@
-"""
-Future workflow for shape recognition tests:
+from pathlib import Path
 
-1. Load SVG or raster fixtures from tests/data.
-2. Convert fixtures into the expected image/contour inputs for recognizers.
-3. Invoke the shape recognition API for each fixture.
-4. Assert the detected shape metadata matches the expected description.
-5. Validate edge cases like nested shapes and dashed outlines.
-"""
+from arrowviz_2026.ast import Schematic, Shape, ShapeType
+from arrowviz_2026.recognizers.shapes import recognize_schematic
+
+
+def test_recognizes_regular_rounded_rectangle() -> None:
+    fixture = Path("tests/data/00.png")
+
+    result = recognize_schematic(fixture)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.ROUNDED,
+            ),
+        )
+    )
