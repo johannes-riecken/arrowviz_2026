@@ -7,7 +7,24 @@ from arrowviz_2026.recognizers.shapes import recognize_schematic
 def test_recognizes_regular_rounded_rectangle() -> None:
     fixture = Path("tests/data/00.png")
 
-    result = recognize_schematic(fixture)
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.ROUNDED,
+            ),
+        )
+    )
+
+
+def test_recognizes_wide_rounded_rectangle() -> None:
+    fixture = Path("tests/data/01.png")
+
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
 
     assert result == Schematic(
         shapes=(
