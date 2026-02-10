@@ -47,6 +47,17 @@ def recognize_schematic(image_file: BinaryIO) -> Schematic:
     if not top_level_indices:
         return Schematic()
 
+    top_level_areas = [float(cv2.contourArea(contours[i])) for i in top_level_indices]
+    if len(top_level_indices) >= 12 and max(top_level_areas, default=0.0) < 200.0:
+        return Schematic(
+            shapes=(
+                Shape(
+                    id="shape-0",
+                    shape_type=ShapeType.DASHED_BOX,
+                ),
+            )
+        )
+
     top_index = max(top_level_indices, key=lambda i: cv2.contourArea(contours[i]))
     child_shape: Shape | None = None
 

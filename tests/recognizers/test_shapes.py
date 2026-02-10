@@ -102,3 +102,19 @@ def test_recognizes_circle() -> None:
             ),
         )
     )
+
+
+def test_recognizes_dashed_rectangle() -> None:
+    fixture = Path("tests/data/07.png")
+
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.DASHED_BOX,
+            ),
+        )
+    )
