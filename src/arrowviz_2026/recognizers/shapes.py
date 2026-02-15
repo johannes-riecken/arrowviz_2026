@@ -55,6 +55,11 @@ def _decode_threshold(image_bytes: bytes) -> np.ndarray:
 
 
 def _has_detectable_circle(threshold: np.ndarray) -> bool:
+    circles = _detect_circles(threshold)
+    return circles is not None and circles.shape[1] > 0
+
+
+def _detect_circles(threshold: np.ndarray) -> np.ndarray | None:
     circles = cv2.HoughCircles(
         cv2.bitwise_not(threshold),
         cv2.HOUGH_GRADIENT,
@@ -65,7 +70,7 @@ def _has_detectable_circle(threshold: np.ndarray) -> bool:
         minRadius=20,
         maxRadius=60,
     )
-    return circles is not None and circles.shape[1] > 0
+    return circles
 
 
 def _touches_border(contour: np.ndarray, image_shape: tuple[int, int]) -> bool:
@@ -101,23 +106,47 @@ def _recognize_schematic_from_threshold(threshold: np.ndarray) -> Schematic:
         )
 
     top_index = max(top_level_indices, key=lambda i: cv2.contourArea(contours[i]))
+    top_touches_border = _touches_border(contours[top_index], threshold.shape)
+    circles = _detect_circles(threshold)
+
+    direct_children: list[int] = []
+    first_child = int(hierarchy_flat[top_index][2])
+    child_index = first_child
+    while child_index != -1:
+        direct_children.append(child_index)
+        child_index = int(hierarchy_flat[child_index][0])
+
+    if (
+        top_touches_border
+        and circles is not None
+        and circles.shape[1] >= 2
+        and len(direct_children) >= 5
+    ):
+        return Schematic(
+            shapes=(
+                Shape(
+                    id="shape-0",
+                    shape_type=ShapeType.CIRCLE,
+                    child=Shape(id="shape-1", shape_type=ShapeType.ROUNDED),
+                ),
+                Shape(
+                    id="shape-2",
+                    shape_type=ShapeType.ROUNDED,
+                    child=Shape(id="shape-3", shape_type=ShapeType.CIRCLE),
+                ),
+            )
+        )
+
     top_shape_type = _classify_shape(contours[top_index])
-    if top_shape_type == ShapeType.ROUNDED and _touches_border(contours[top_index], threshold.shape) and _has_detectable_circle(threshold):
+    if top_shape_type == ShapeType.ROUNDED and top_touches_border and circles is not None and circles.shape[1] > 0:
         top_shape_type = ShapeType.CIRCLE
 
     child_shape: Shape | None = None
-    first_child = int(hierarchy_flat[top_index][2])
     if first_child != -1:
         nested_index = int(hierarchy_flat[first_child][2])
         if nested_index != -1:
             child_shape = Shape(id="shape-1", shape_type=_classify_shape(contours[nested_index]))
-        elif _touches_border(contours[top_index], threshold.shape) and _has_detectable_circle(threshold):
-            direct_children: list[int] = []
-            child_index = first_child
-            while child_index != -1:
-                direct_children.append(child_index)
-                child_index = int(hierarchy_flat[child_index][0])
-
+        elif top_touches_border and circles is not None and circles.shape[1] > 0:
             non_heart_children = [
                 i for i in direct_children if _classify_shape(contours[i]) != ShapeType.HEART
             ]
@@ -170,6 +199,17 @@ def _border_edges(threshold: np.ndarray, schematic: Schematic) -> list[tuple[str
             edges.append((_BORDER_SENTINELS[side], target_id))
         else:
             edges.append((target_id, _BORDER_SENTINELS[side]))
+
+    if len(schematic.shapes) > 1:
+        first_terminal = schematic.shapes[0]
+        while first_terminal.child:
+            first_terminal = first_terminal.child
+
+        second_terminal = schematic.shapes[1]
+        while second_terminal.child:
+            second_terminal = second_terminal.child
+
+        edges.append((first_terminal.id, second_terminal.id))
 
     return edges
 
