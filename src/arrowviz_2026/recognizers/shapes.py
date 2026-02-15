@@ -111,6 +111,19 @@ def _recognize_schematic_from_threshold(threshold: np.ndarray) -> Schematic:
         nested_index = int(hierarchy_flat[first_child][2])
         if nested_index != -1:
             child_shape = Shape(id="shape-1", shape_type=_classify_shape(contours[nested_index]))
+        elif _touches_border(contours[top_index], threshold.shape) and _has_detectable_circle(threshold):
+            direct_children: list[int] = []
+            child_index = first_child
+            while child_index != -1:
+                direct_children.append(child_index)
+                child_index = int(hierarchy_flat[child_index][0])
+
+            non_heart_children = [
+                i for i in direct_children if _classify_shape(contours[i]) != ShapeType.HEART
+            ]
+            if len(direct_children) > 1 and non_heart_children:
+                best_child = min(non_heart_children, key=lambda i: cv2.contourArea(contours[i]))
+                child_shape = Shape(id="shape-1", shape_type=_classify_shape(contours[best_child]))
 
     return Schematic(
         shapes=(
