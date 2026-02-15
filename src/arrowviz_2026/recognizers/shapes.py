@@ -8,6 +8,14 @@ import numpy as np
 from arrowviz_2026.ast import Schematic, Shape, ShapeType
 
 
+_BORDER_SENTINELS = {
+    "left": "left-border",
+    "right": "right-border",
+    "top": "top-border",
+    "bottom": "bottom-border",
+}
+
+
 def _classify_shape(contour: np.ndarray) -> ShapeType:
     points = contour[:, 0, :]
     x, y, w, h = cv2.boundingRect(points)
@@ -37,15 +45,41 @@ def _classify_shape(contour: np.ndarray) -> ShapeType:
     return ShapeType.ROUNDED if min_corner_distance > 2.0 else ShapeType.BOX
 
 
-def recognize_schematic(image_file: BinaryIO) -> Schematic:
-    """Recognize a schematic from an image file handle."""
-
-    data = np.frombuffer(image_file.read(), dtype=np.uint8)
+def _decode_threshold(image_bytes: bytes) -> np.ndarray:
+    data = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(data, cv2.IMREAD_GRAYSCALE)
     if image is None:
         raise ValueError("Unable to decode image")
-
     _, threshold = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY_INV)
+    return threshold
+
+
+def _has_detectable_circle(threshold: np.ndarray) -> bool:
+    circles = cv2.HoughCircles(
+        cv2.bitwise_not(threshold),
+        cv2.HOUGH_GRADIENT,
+        dp=1,
+        minDist=20,
+        param1=100,
+        param2=20,
+        minRadius=20,
+        maxRadius=60,
+    )
+    return circles is not None and circles.shape[1] > 0
+
+
+def _touches_border(contour: np.ndarray, image_shape: tuple[int, int]) -> bool:
+    points = contour[:, 0, :]
+    h, w = image_shape
+    return bool(
+        np.any(points[:, 0] == 0)
+        or np.any(points[:, 0] == w - 1)
+        or np.any(points[:, 1] == 0)
+        or np.any(points[:, 1] == h - 1)
+    )
+
+
+def _recognize_schematic_from_threshold(threshold: np.ndarray) -> Schematic:
     contours, hierarchy = cv2.findContours(threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
     if not contours or hierarchy is None:
         return Schematic()
@@ -67,8 +101,11 @@ def recognize_schematic(image_file: BinaryIO) -> Schematic:
         )
 
     top_index = max(top_level_indices, key=lambda i: cv2.contourArea(contours[i]))
-    child_shape: Shape | None = None
+    top_shape_type = _classify_shape(contours[top_index])
+    if top_shape_type == ShapeType.ROUNDED and _touches_border(contours[top_index], threshold.shape) and _has_detectable_circle(threshold):
+        top_shape_type = ShapeType.CIRCLE
 
+    child_shape: Shape | None = None
     first_child = int(hierarchy_flat[top_index][2])
     if first_child != -1:
         nested_index = int(hierarchy_flat[first_child][2])
@@ -79,8 +116,53 @@ def recognize_schematic(image_file: BinaryIO) -> Schematic:
         shapes=(
             Shape(
                 id="shape-0",
-                shape_type=_classify_shape(contours[top_index]),
+                shape_type=top_shape_type,
                 child=child_shape,
             ),
         )
     )
+
+
+def _border_edges(threshold: np.ndarray) -> list[tuple[str, str]]:
+    if threshold.size == 0:
+        return []
+
+    h, w = threshold.shape
+    border_masks = {
+        "left": np.zeros_like(threshold),
+        "right": np.zeros_like(threshold),
+        "top": np.zeros_like(threshold),
+        "bottom": np.zeros_like(threshold),
+    }
+    border_masks["left"][:, 0] = threshold[:, 0]
+    border_masks["right"][:, w - 1] = threshold[:, w - 1]
+    border_masks["top"][0, :] = threshold[0, :]
+    border_masks["bottom"][h - 1, :] = threshold[h - 1, :]
+
+    edges: list[tuple[str, str]] = []
+    if not _has_detectable_circle(threshold):
+        return edges
+
+    for side, mask in border_masks.items():
+        if cv2.countNonZero(mask) == 0:
+            continue
+        if side in {"left", "top"}:
+            edges.append((_BORDER_SENTINELS[side], "shape-0"))
+        else:
+            edges.append(("shape-0", _BORDER_SENTINELS[side]))
+
+    return edges
+
+
+def recognize_schematic(image_file: BinaryIO) -> Schematic:
+    """Recognize a schematic from an image file handle."""
+
+    threshold = _decode_threshold(image_file.read())
+    return _recognize_schematic_from_threshold(threshold)
+
+
+def recognize_graph(image_file: BinaryIO) -> tuple[Schematic, list[tuple[str, str]]]:
+    """Recognize both shapes and border-connected edges from an image file handle."""
+
+    threshold = _decode_threshold(image_file.read())
+    return _recognize_schematic_from_threshold(threshold), _border_edges(threshold)
