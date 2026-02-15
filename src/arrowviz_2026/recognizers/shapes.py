@@ -136,7 +136,7 @@ def _recognize_schematic_from_threshold(threshold: np.ndarray) -> Schematic:
     )
 
 
-def _border_edges(threshold: np.ndarray) -> list[tuple[str, str]]:
+def _border_edges(threshold: np.ndarray, schematic: Schematic) -> list[tuple[str, str]]:
     if threshold.size == 0:
         return []
 
@@ -156,13 +156,20 @@ def _border_edges(threshold: np.ndarray) -> list[tuple[str, str]]:
     if not _has_detectable_circle(threshold):
         return edges
 
+    target_id = "shape-0"
+    if schematic.shapes:
+        curr = schematic.shapes[0]
+        while curr.child:
+            curr = curr.child
+        target_id = curr.id
+
     for side, mask in border_masks.items():
         if cv2.countNonZero(mask) == 0:
             continue
         if side in {"left", "top"}:
-            edges.append((_BORDER_SENTINELS[side], "shape-0"))
+            edges.append((_BORDER_SENTINELS[side], target_id))
         else:
-            edges.append(("shape-0", _BORDER_SENTINELS[side]))
+            edges.append((target_id, _BORDER_SENTINELS[side]))
 
     return edges
 
@@ -178,4 +185,5 @@ def recognize_graph(image_file: BinaryIO) -> tuple[Schematic, list[tuple[str, st
     """Recognize both shapes and border-connected edges from an image file handle."""
 
     threshold = _decode_threshold(image_file.read())
-    return _recognize_schematic_from_threshold(threshold), _border_edges(threshold)
+    schematic = _recognize_schematic_from_threshold(threshold)
+    return schematic, _border_edges(threshold, schematic)
