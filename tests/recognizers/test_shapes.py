@@ -206,3 +206,32 @@ def test_recognizes_arrow_from_left_border_to_rounded_rectangle_within_circle() 
         )
     )
     assert edges == [("left-border", "shape-1")]
+
+
+def test_recognizes_arrow_chain_between_nested_shapes() -> None:
+    fixture = Path("tests/data/12.png")
+
+    with fixture.open("rb") as image_file:
+        result, edges = recognize_graph(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.CIRCLE,
+                child=Shape(
+                    id="shape-1",
+                    shape_type=ShapeType.ROUNDED,
+                ),
+            ),
+            Shape(
+                id="shape-2",
+                shape_type=ShapeType.ROUNDED,
+                child=Shape(
+                    id="shape-3",
+                    shape_type=ShapeType.CIRCLE,
+                ),
+            ),
+        )
+    )
+    assert edges == [("left-border", "shape-1"), ("shape-1", "shape-3")]
