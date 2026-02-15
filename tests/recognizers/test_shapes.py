@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from arrowviz_2026.ast import Schematic, Shape, ShapeType
-from arrowviz_2026.recognizers.shapes import recognize_schematic
+from arrowviz_2026.recognizers.shapes import recognize_graph, recognize_schematic
 
 
 def test_recognizes_regular_rounded_rectangle() -> None:
@@ -171,3 +171,20 @@ def test_recognizes_heart() -> None:
             ),
         )
     )
+
+
+def test_recognizes_circle_with_incoming_arrow_from_left_border() -> None:
+    fixture = Path("tests/data/09.png")
+
+    with fixture.open("rb") as image_file:
+        result, edges = recognize_graph(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.CIRCLE,
+            ),
+        )
+    )
+    assert edges == [("left-border", "shape-0")]
