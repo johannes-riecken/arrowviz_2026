@@ -6,3 +6,8 @@ recognizes circle
 recognizes circle within rounded rectangle
 recognizes rounded rectangle within circle
 recognizes dashed rectangle
+recognizes heart
+recognizes circle with incoming arrow from left border
+recognizes circle with outgoing arrow to right border
+recognizes arrow from left border to rounded rectangle within circle
+recognizes arrow from left border to rounded rectangle within circle and arrow from that to circle within rounded rectangle
