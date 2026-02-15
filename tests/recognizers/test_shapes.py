@@ -118,3 +118,23 @@ def test_recognizes_dashed_rectangle() -> None:
             ),
         )
     )
+
+
+def test_recognizes_rounded_rectangle_within_circle() -> None:
+    fixture = Path("tests/data/06.png")
+
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.CIRCLE,
+                child=Shape(
+                    id="shape-1",
+                    shape_type=ShapeType.ROUNDED,
+                ),
+            ),
+        )
+    )
