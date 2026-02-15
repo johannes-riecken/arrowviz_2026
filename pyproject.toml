@@ -21,3 +21,9 @@ testpaths = ["tests"]
 [tool.uv-build]
 packages = ["arrowviz_2026"]
 package-dir = { "" = "src" }
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "ruff>=0.15.1",
+]
