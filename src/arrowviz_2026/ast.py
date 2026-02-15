@@ -14,6 +14,7 @@ class ShapeType(str, Enum):
     ROUNDED = "rounded"
     CIRCLE = "circle"
     DASHED_BOX = "dashed_box"
+    HEART = "heart"
 
 
 @dataclass(frozen=True)

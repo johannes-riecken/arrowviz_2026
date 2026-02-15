@@ -23,8 +23,16 @@ def _classify_shape(contour: np.ndarray) -> ShapeType:
     perimeter = float(cv2.arcLength(contour, True))
     circularity = 4.0 * np.pi * area / (perimeter * perimeter) if perimeter else 0.0
 
+    hull = cv2.convexHull(contour)
+    hull_area = float(cv2.contourArea(hull))
+    solidity = area / hull_area if hull_area else 1.0
+    aspect_ratio = w / h if h else 1.0
+
     if circularity > 0.88:
         return ShapeType.CIRCLE
+
+    if solidity < 0.9 and 0.85 <= aspect_ratio <= 1.2:
+        return ShapeType.HEART
 
     return ShapeType.ROUNDED if min_corner_distance > 2.0 else ShapeType.BOX
 
