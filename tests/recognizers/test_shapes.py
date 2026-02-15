@@ -156,3 +156,18 @@ def test_recognizes_rounded_rectangle_within_circle() -> None:
             ),
         )
     )
+
+def test_recognizes_heart() -> None:
+    fixture = Path("tests/data/08.png")
+
+    with fixture.open("rb") as image_file:
+        result = recognize_schematic(image_file)
+
+    assert result == Schematic(
+        shapes=(
+            Shape(
+                id="shape-0",
+                shape_type=ShapeType.HEART,
+            ),
+        )
+    )
