@@ -1,0 +1,35 @@
+<svg
+   width="120"
+   height="120"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+   <defs>
+   <marker
+      id="ArrowWide"
+      style="overflow:visible"
+      markerWidth="1"
+      markerHeight="1"
+      viewBox="0 0 1 1"
+      >
+      <path
+         style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:butt"
+         d="M 6,-6 0,0 6,6"
+         transform="rotate(180,0.125,0)"
+         />
+   </marker>
+   </defs>
+  <g>
+    <path
+       style="fill:none; stroke:black; stroke-width:1; marker-end:url(#ArrowWide)"
+       d="M 0,60 H 30"
+       />
+    <ellipse
+       style="fill:none; stroke:black; stroke-width:1"
+       cx="60"
+       cy="60"
+       rx="30"
+       ry="30"
+       />
+  </g>
+</svg>
